@@ -15,6 +15,13 @@ Audit script to check which Swiss Subnet Node Providers have joined the required
    ```bash
    pip install -r requirements.txt
    ```
+   
+   Or use a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
 2. Copy the example env file and add your Matrix access token:
    ```bash
@@ -33,26 +40,37 @@ Audit script to check which Swiss Subnet Node Providers have joined the required
 python np_matrix_audit.py
 ```
 
-## Output
+This will:
+1. Fetch membership data from Matrix API
+2. Generate `np_audit_report.json`
+3. Generate `np_audit_report.html`
 
-The script produces:
-- A summary table showing which rooms each NP has joined
-- A detailed gap list for non-compliant NPs
-- A JSON report (`np_audit_report.json`) for further processing
+Then open `np_audit_report.html` in your browser to view the results.
+
+### Regenerate HTML Only
+
+If you already have the JSON and just want to regenerate the HTML:
+
+```bash
+python generate_html_report.py
+```
+
+## Output Files
+
+| File | Description |
+|------|-------------|
+| `np_audit_report.json` | Raw audit data in JSON format |
+| `np_audit_report.html` | Beautiful HTML report for viewing in browser |
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `np_matrix_audit.py` | Main audit script - fetches data from Matrix API |
+| `generate_html_report.py` | Generates HTML report from JSON data |
 
 ## Important Notes
 
 - Your Matrix account must be a **member of all rooms** you want to audit (or the rooms must be publicly viewable)
 - If you get 403 errors, you may need to join those rooms first
 - The script identifies NP members by checking who is in each NP's dedicated room, then cross-references with mandatory rooms
-
-## Example Output
-
-```
-┌───────────────────────────────────┬────────┬─────────┬────────┬──────────┬──────────┐
-│ Node Provider                     │  Own   │ General │ Announ │ Incident │  Status  │
-├───────────────────────────────────┼────────┼─────────┼────────┼──────────┼──────────┤
-│ Aitubi AG                         │   ✅   │   ✅    │   ✅   │    ✅    │   ✅ OK  │
-│ AlpineDC SA                       │   ✅   │   ❌    │   ❌   │    ❌    │  ⚠ GAPS │
-...
-```

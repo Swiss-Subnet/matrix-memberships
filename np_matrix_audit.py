@@ -68,7 +68,6 @@ class MatrixClient:
 
     def resolve_room_alias(self, alias: str) -> Optional[str]:
         """Resolve a room alias to a room ID."""
-        # URL encode the alias (# -> %23, : -> %3A)
         encoded_alias = alias.replace("#", "%23").replace(":", "%3A")
         url = f"{self.homeserver}/_matrix/client/v3/directory/room/{encoded_alias}"
         
@@ -93,7 +92,6 @@ class MatrixClient:
                 joined = resp.json().get("joined", {})
                 return list(joined.keys())
             elif resp.status_code == 403:
-                # Try alternative endpoint for rooms we're not in
                 return self._get_members_via_state(room_id)
             else:
                 print(f"  ⚠ Failed to get members for {room_id}: {resp.status_code}")
@@ -123,14 +121,10 @@ class MatrixClient:
     def get_room_info(self, alias: str) -> RoomInfo:
         """Get full room info including members."""
         info = RoomInfo(alias=alias)
-        
-        # Resolve alias to room ID
         info.room_id = self.resolve_room_alias(alias)
         if not info.room_id:
             info.error = "Could not resolve room alias"
             return info
-        
-        # Get members
         info.members = self.get_room_members(info.room_id)
         return info
 
@@ -155,7 +149,7 @@ def run_audit():
     # Step 1: Get members of mandatory rooms
     print("\n📋 Fetching mandatory room memberships...")
     mandatory_room_info = {}
-    mandatory_members = {}  # room_key -> set of members
+    mandatory_members = {}
     
     for key, alias in MANDATORY_ROOMS.items():
         print(f"  Checking {key}: {alias}")
@@ -182,27 +176,25 @@ def run_audit():
     print("GAP ASSESSMENT REPORT")
     print("=" * 70)
     
-    # Collect all unique members from NP rooms to identify NP-associated accounts
-    all_np_members = set()
     np_to_members = {}
-    
     for np_name, info in np_room_info.items():
         np_to_members[np_name] = set(info.members)
-        all_np_members.update(info.members)
     
-    # Generate report
     report = []
+    compliant_count = 0
     
     for np_name in NODE_PROVIDERS.keys():
         np_members = np_to_members.get(np_name, set())
         
-        # Check each mandatory room
         in_general = bool(np_members & mandatory_members.get("general", set()))
         in_announcements = bool(np_members & mandatory_members.get("announcements", set()))
         in_incident = bool(np_members & mandatory_members.get("incident", set()))
         in_own_room = len(np_members) > 0
+        fully_compliant = all([in_own_room, in_general, in_announcements, in_incident])
         
-        # Find which members are in the NP room
+        if fully_compliant:
+            compliant_count += 1
+        
         np_handles = list(np_members) if np_members else ["(no members found)"]
         
         report.append({
@@ -213,7 +205,7 @@ def run_audit():
             "in_general": in_general,
             "in_announcements": in_announcements,
             "in_incident": in_incident,
-            "fully_compliant": all([in_own_room, in_general, in_announcements, in_incident])
+            "fully_compliant": fully_compliant
         })
     
     # Print summary table
@@ -221,22 +213,16 @@ def run_audit():
     print(f"│ {'Node Provider':<33} │ {'Own':^6} │ {'General':^7} │ {'Announ':^6} │ {'Incident':^8} │ {'Status':^8} │")
     print("├" + "─" * 35 + "┼" + "─" * 8 + "┼" + "─" * 9 + "┼" + "─" * 8 + "┼" + "─" * 10 + "┼" + "─" * 10 + "┤")
     
-    compliant_count = 0
     for r in report:
         own = "✅" if r["in_own_room"] else "❌"
         gen = "✅" if r["in_general"] else "❌"
         ann = "✅" if r["in_announcements"] else "❌"
         inc = "✅" if r["in_incident"] else "❌"
         status = "✅ OK" if r["fully_compliant"] else "⚠ GAPS"
-        
-        if r["fully_compliant"]:
-            compliant_count += 1
-        
         print(f"│ {r['np_name']:<33} │ {own:^6} │ {gen:^7} │ {ann:^6} │ {inc:^8} │ {status:^8} │")
     
     print("└" + "─" * 35 + "┴" + "─" * 8 + "┴" + "─" * 9 + "┴" + "─" * 8 + "┴" + "─" * 10 + "┴" + "─" * 10 + "┘")
     
-    # Summary
     print(f"\n📊 Summary: {compliant_count}/{len(report)} Node Providers fully compliant")
     
     # Detailed gaps
@@ -266,9 +252,18 @@ def run_audit():
         json.dump({
             "mandatory_rooms": {k: {"alias": v.alias, "member_count": len(v.members)} 
                                for k, v in mandatory_room_info.items()},
-            "node_providers": report
+            "node_providers": report,
+            "summary": {
+                "total": len(report),
+                "compliant": compliant_count,
+                "with_gaps": len(report) - compliant_count
+            }
         }, f, indent=2)
-    print(f"\n📁 Full report saved to: {output_file}")
+    print(f"\n📁 JSON report saved to: {output_file}")
+    
+    # Generate HTML report
+    from generate_html_report import generate_html_report
+    generate_html_report()
 
 
 if __name__ == "__main__":
