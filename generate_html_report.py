@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 """
 HTML Report Generator for Matrix NP Audit
-
-Reads np_audit_report.json and generates a beautiful HTML report.
 Styled to match Swiss Subnet branding (subnet.ch)
-
-Usage:
-    python generate_html_report.py
 """
 
 import json
@@ -14,9 +9,8 @@ from datetime import datetime
 
 
 def generate_html_report(input_file: str = "np_audit_report.json", output_file: str = "np_audit_report.html"):
-    """Generate a beautiful HTML report from JSON data."""
+    """Generate HTML report from JSON data."""
     
-    # Load JSON data
     try:
         with open(input_file, "r") as f:
             data = json.load(f)
@@ -31,7 +25,8 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
     summary = data.get("summary", {})
     compliant_count = summary.get("compliant", 0)
     total_count = summary.get("total", len(report))
-    gap_count = summary.get("with_gaps", total_count - compliant_count)
+    unknown_count = summary.get("unknown", 0)
+    gap_count = summary.get("with_gaps", total_count - compliant_count - unknown_count)
     
     html = """<!DOCTYPE html>
 <html lang="en">
@@ -40,26 +35,17 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Node Provider Matrix Audit Report</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #ffffff;
             min-height: 100vh;
             padding: 60px 40px;
             color: #1a1a1a;
             line-height: 1.6;
         }
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        .header {
-            margin-bottom: 50px;
-        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { margin-bottom: 50px; }
         .logo {
             display: flex;
             align-items: center;
@@ -91,9 +77,7 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             margin-bottom: 20px;
             color: #1a1a1a;
         }
-        h1 span {
-            color: #E53935;
-        }
+        h1 span { color: #E53935; }
         .subtitle {
             font-size: 1.1rem;
             color: #666;
@@ -107,21 +91,16 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             border-top: 1px solid #eee;
             border-bottom: 1px solid #eee;
         }
-        .summary-card {
-            text-align: left;
-        }
+        .summary-card { text-align: left; }
         .summary-card .number {
             font-size: 3rem;
             font-weight: 700;
             color: #1a1a1a;
             line-height: 1;
         }
-        .summary-card.warning .number {
-            color: #E53935;
-        }
-        .summary-card.success .number {
-            color: #2E7D32;
-        }
+        .summary-card.warning .number { color: #E53935; }
+        .summary-card.success .number { color: #2E7D32; }
+        .summary-card.unknown .number { color: #FF9800; }
         .summary-card .label {
             color: #888;
             font-size: 0.85rem;
@@ -144,54 +123,34 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             color: #888;
             border-bottom: 2px solid #1a1a1a;
         }
-        th:not(:first-child) {
-            text-align: center;
-        }
+        th:not(:first-child) { text-align: center; }
         td {
             padding: 16px;
             border-bottom: 1px solid #eee;
             font-size: 0.95rem;
         }
-        td:not(:first-child) {
-            text-align: center;
-        }
-        tr:hover {
-            background: #fafafa;
-        }
-        .status-ok {
-            color: #2E7D32;
-            font-weight: 600;
-        }
-        .status-gap {
-            color: #E53935;
-            font-weight: 600;
-        }
-        .check {
-            color: #2E7D32;
-            font-size: 1.1rem;
-        }
-        .cross {
-            color: #E53935;
-            font-size: 1.1rem;
-        }
-        .np-name {
-            font-weight: 600;
-            color: #1a1a1a;
-        }
-        .room-alias {
+        td:not(:first-child) { text-align: center; }
+        tr:hover { background: #fafafa; }
+        .status-ok { color: #2E7D32; font-weight: 600; }
+        .status-gap { color: #E53935; font-weight: 600; }
+        .status-unknown { color: #FF9800; font-weight: 600; }
+        .check { color: #2E7D32; font-size: 1.1rem; }
+        .cross { color: #E53935; font-size: 1.1rem; }
+        .unknown { color: #FF9800; font-size: 1.1rem; }
+        .np-name { font-weight: 600; color: #1a1a1a; }
+        .np-handle {
             font-size: 0.75rem;
             color: #999;
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-family: 'SF Mono', Monaco, monospace;
             margin-top: 4px;
         }
+        .np-handle.missing { color: #FF9800; }
         .legend {
             margin-top: 30px;
             color: #888;
             font-size: 0.85rem;
         }
-        .legend span {
-            margin-right: 24px;
-        }
+        .legend span { margin-right: 24px; }
         .timestamp {
             margin-top: 40px;
             color: #ccc;
@@ -214,9 +173,7 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             padding: 20px 24px;
             margin-bottom: 16px;
         }
-        .gap-item:last-child {
-            margin-bottom: 0;
-        }
+        .gap-item.unknown { border-left-color: #FF9800; }
         .gap-item h3 {
             color: #1a1a1a;
             font-size: 1rem;
@@ -234,19 +191,13 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             border-radius: 3px;
             font-size: 0.8rem;
         }
-        .gap-item .missing {
-            color: #E53935;
-            font-weight: 500;
-        }
+        .gap-item .missing { color: #E53935; font-weight: 500; }
         .all-compliant {
             background: #E8F5E9;
             border-left: 3px solid #2E7D32;
             padding: 24px;
         }
-        .all-compliant h2 {
-            color: #2E7D32;
-            margin: 0;
-        }
+        .all-compliant h2 { color: #2E7D32; margin: 0; }
     </style>
 </head>
 <body>
@@ -269,6 +220,10 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
                 <div class="number">GAP_COUNT</div>
                 <div class="label">With Gaps</div>
             </div>
+            <div class="summary-card unknown">
+                <div class="number">UNKNOWN_COUNT</div>
+                <div class="label">Unknown Handle</div>
+            </div>
             <div class="summary-card">
                 <div class="number">TOTAL_COUNT</div>
                 <div class="label">Total NPs</div>
@@ -279,7 +234,7 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             <thead>
                 <tr>
                     <th>Node Provider</th>
-                    <th>Own Room</th>
+                    <th>Room</th>
                     <th>General</th>
                     <th>Announcements</th>
                     <th>Incident</th>
@@ -292,8 +247,9 @@ TABLE_ROWS
         </table>
         
         <div class="legend">
-            <span>✓ Joined</span>
-            <span>✗ Not Joined</span>
+            <span>✓ Yes</span>
+            <span>✗ No</span>
+            <span>? Unknown</span>
         </div>
 
 GAP_SECTION
@@ -306,18 +262,28 @@ GAP_SECTION
     # Generate table rows
     rows = []
     for r in report:
-        own = '<span class="check">✓</span>' if r["in_own_room"] else '<span class="cross">✗</span>'
-        gen = '<span class="check">✓</span>' if r["in_general"] else '<span class="cross">✗</span>'
-        ann = '<span class="check">✓</span>' if r["in_announcements"] else '<span class="cross">✗</span>'
-        inc = '<span class="check">✓</span>' if r["in_incident"] else '<span class="cross">✗</span>'
-        status = '<span class="status-ok">OK</span>' if r["fully_compliant"] else '<span class="status-gap">GAPS</span>'
+        room = '<span class="check">✓</span>' if r.get("room_exists") else '<span class="cross">✗</span>'
+        
+        handle = r.get("np_handle", "@???")
+        handle_class = "np-handle missing" if handle == "@???" else "np-handle"
+        
+        if r.get("in_general") is None:
+            gen = '<span class="unknown">?</span>'
+            ann = '<span class="unknown">?</span>'
+            inc = '<span class="unknown">?</span>'
+            status = '<span class="status-unknown">???</span>'
+        else:
+            gen = '<span class="check">✓</span>' if r["in_general"] else '<span class="cross">✗</span>'
+            ann = '<span class="check">✓</span>' if r["in_announcements"] else '<span class="cross">✗</span>'
+            inc = '<span class="check">✓</span>' if r["in_incident"] else '<span class="cross">✗</span>'
+            status = '<span class="status-ok">OK</span>' if r.get("fully_compliant") else '<span class="status-gap">GAPS</span>'
         
         row = f"""                <tr>
                     <td>
                         <div class="np-name">{r['np_name']}</div>
-                        <div class="room-alias">{r['np_room']}</div>
+                        <div class="{handle_class}">{handle}</div>
                     </td>
-                    <td>{own}</td>
+                    <td>{room}</td>
                     <td>{gen}</td>
                     <td>{ann}</td>
                     <td>{inc}</td>
@@ -328,25 +294,34 @@ GAP_SECTION
     # Generate gap section
     gap_items = []
     for r in report:
-        if not r["fully_compliant"]:
+        if r.get("fully_compliant") == True:
+            continue
+            
+        handle = r.get("np_handle", "@???")
+        
+        if r.get("in_general") is None:
+            # Unknown handle
+            gap_items.append(f"""            <div class="gap-item unknown">
+                <h3>{r['np_name']}</h3>
+                <p>Room: <code>{r.get('np_room', 'N/A')}</code></p>
+                <p class="missing">⚠ Missing Matrix handle - cannot check room membership</p>
+            </div>""")
+        else:
             gaps = []
-            if not r["in_own_room"]:
-                gaps.append("Own NP room")
-            if not r["in_general"]:
+            if not r.get("room_exists"):
+                gaps.append("Room doesn't exist")
+            if not r.get("in_general"):
                 gaps.append("#ic-node-providers")
-            if not r["in_announcements"]:
+            if not r.get("in_announcements"):
                 gaps.append("#ic-node-providers-announcements")
-            if not r["in_incident"]:
+            if not r.get("in_incident"):
                 gaps.append("#ic-node-providers-incident-response")
             
-            members_str = ", ".join(r.get("members", ["(none)"]))
-            gaps_str = ", ".join(gaps)
-            
-            gap_items.append(f"""            <div class="gap-item">
+            if gaps:
+                gap_items.append(f"""            <div class="gap-item">
                 <h3>{r['np_name']}</h3>
-                <p>Room: <code>{r['np_room']}</code></p>
-                <p>Members: {members_str}</p>
-                <p class="missing">Missing: {gaps_str}</p>
+                <p>Handle: <code>{handle}</code></p>
+                <p class="missing">Missing: {', '.join(gaps)}</p>
             </div>""")
     
     if gap_items:
@@ -366,6 +341,7 @@ GAP_SECTION
     # Fill in template
     html = html.replace("COMPLIANT_COUNT", str(compliant_count))
     html = html.replace("GAP_COUNT", str(gap_count))
+    html = html.replace("UNKNOWN_COUNT", str(unknown_count))
     html = html.replace("TOTAL_COUNT", str(total_count))
     html = html.replace("TABLE_ROWS", "\n".join(rows))
     html = html.replace("GAP_SECTION", gap_section)
