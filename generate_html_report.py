@@ -234,7 +234,7 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
             <thead>
                 <tr>
                     <th>Node Provider</th>
-                    <th>Room</th>
+                    <th>Own Room</th>
                     <th>General</th>
                     <th>Announcements</th>
                     <th>Incident</th>
@@ -262,17 +262,17 @@ GAP_SECTION
     # Generate table rows
     rows = []
     for r in report:
-        room = '<span class="check">✓</span>' if r.get("room_exists") else '<span class="cross">✗</span>'
-        
         handle = r.get("np_handle", "@???")
         handle_class = "np-handle missing" if handle == "@???" else "np-handle"
         
         if r.get("in_general") is None:
+            own = '<span class="unknown">?</span>'
             gen = '<span class="unknown">?</span>'
             ann = '<span class="unknown">?</span>'
             inc = '<span class="unknown">?</span>'
             status = '<span class="status-unknown">???</span>'
         else:
+            own = '<span class="check">✓</span>' if r.get("in_own_room") else '<span class="cross">✗</span>'
             gen = '<span class="check">✓</span>' if r["in_general"] else '<span class="cross">✗</span>'
             ann = '<span class="check">✓</span>' if r["in_announcements"] else '<span class="cross">✗</span>'
             inc = '<span class="check">✓</span>' if r["in_incident"] else '<span class="cross">✗</span>'
@@ -283,7 +283,7 @@ GAP_SECTION
                         <div class="np-name">{r['np_name']}</div>
                         <div class="{handle_class}">{handle}</div>
                     </td>
-                    <td>{room}</td>
+                    <td>{own}</td>
                     <td>{gen}</td>
                     <td>{ann}</td>
                     <td>{inc}</td>
@@ -308,8 +308,8 @@ GAP_SECTION
             </div>""")
         else:
             gaps = []
-            if not r.get("room_exists"):
-                gaps.append("Room doesn't exist")
+            if not r.get("in_own_room"):
+                gaps.append("Own room")
             if not r.get("in_general"):
                 gaps.append("#ic-node-providers")
             if not r.get("in_announcements"):

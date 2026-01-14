@@ -3,7 +3,7 @@
 Matrix Node Provider Room Membership Audit
 
 For each Node Provider, checks:
-1. Does their dedicated room exist?
+1. Is the NP handle in their own room?
 2. Is the NP handle in General?
 3. Is the NP handle in Announcements?
 4. Is the NP handle in Incident Response?
@@ -44,16 +44,16 @@ NODE_PROVIDERS_ROOM = {
 
 NODE_PROVIDERS_HANDLE = {
     "Aitubi AG": "@ic.aitubi:matrix.org",
-    "AlpineDC SA": "@???",
+    "AlpineDC SA": "@smorier:matrix.org",
     "NOKU SA": "@???",
     "Avalution AG": "@???",
     "CoreLedger": "@???",
-    "Blockchain Innovation Group": "@???",
+    "Blockchain Innovation Group": "@blockchaininnovation:matrix.org",
     "LTIN AG": "@???",
     "achermann.swiss": "@???",
     "Swiss Datalink AG": "@???",
     "senseLAN": "@???",
-    "vestra ICT AG": "@???",
+    "vestra ICT AG": "@jonas.foser:matrix.org",
     "SolNet": "@???",
     "Decentralized": "@???",
 }
@@ -118,30 +118,35 @@ def run_audit():
         np_room = NODE_PROVIDERS_ROOM[np_name]
         np_handle = NODE_PROVIDERS_HANDLE[np_name]
         
-        # 1. Does room exist?
-        room_id = resolve_room(np_room)
-        room_exists = room_id is not None
-        
         # Handle unknown?
         handle_unknown = np_handle == "@???"
         
-        # 2-4. Is NP handle in mandatory rooms?
         if handle_unknown:
-            in_general = None  # Unknown
+            in_own_room = None
+            in_general = None
             in_announcements = None
             in_incident = None
             fully_compliant = None
         else:
+            # 1. Is NP in their own room?
+            own_room_id = resolve_room(np_room)
+            if own_room_id:
+                own_room_members = get_members(own_room_id)
+                in_own_room = np_handle in own_room_members
+            else:
+                in_own_room = False
+            
+            # 2-4. Is NP in mandatory rooms?
             in_general = np_handle in mandatory["general"]
             in_announcements = np_handle in mandatory["announcements"]
             in_incident = np_handle in mandatory["incident"]
-            fully_compliant = all([room_exists, in_general, in_announcements, in_incident])
+            fully_compliant = all([in_own_room, in_general, in_announcements, in_incident])
         
         report.append({
             "np_name": np_name,
             "np_room": np_room,
             "np_handle": np_handle,
-            "room_exists": room_exists,
+            "in_own_room": in_own_room,
             "in_general": in_general,
             "in_announcements": in_announcements,
             "in_incident": in_incident,
@@ -152,27 +157,27 @@ def run_audit():
     compliant_count = sum(1 for r in report if r["fully_compliant"] == True)
     unknown_count = sum(1 for r in report if r["fully_compliant"] is None)
     
-    print("\n┌" + "─"*35 + "┬" + "─"*8 + "┬" + "─"*9 + "┬" + "─"*8 + "┬" + "─"*10 + "┬" + "─"*10 + "┐")
-    print(f"│ {'Node Provider':<33} │ {'Room':^6} │ {'General':^7} │ {'Announ':^6} │ {'Incident':^8} │ {'Status':^8} │")
-    print("├" + "─"*35 + "┼" + "─"*8 + "┼" + "─"*9 + "┼" + "─"*8 + "┼" + "─"*10 + "┼" + "─"*10 + "┤")
+    print("\n┌" + "─"*35 + "┬" + "─"*10 + "┬" + "─"*9 + "┬" + "─"*8 + "┬" + "─"*10 + "┬" + "─"*10 + "┐")
+    print(f"│ {'Node Provider':<33} │ {'Own Room':^8} │ {'General':^7} │ {'Announ':^6} │ {'Incident':^8} │ {'Status':^8} │")
+    print("├" + "─"*35 + "┼" + "─"*10 + "┼" + "─"*9 + "┼" + "─"*8 + "┼" + "─"*10 + "┼" + "─"*10 + "┤")
     
     for r in report:
-        room = "✅" if r["room_exists"] else "❌"
-        
         if r["in_general"] is None:
+            own = "❓"
             gen = "❓"
             ann = "❓"
             inc = "❓"
             status = "❓ ???"
         else:
+            own = "✅" if r["in_own_room"] else "❌"
             gen = "✅" if r["in_general"] else "❌"
             ann = "✅" if r["in_announcements"] else "❌"
             inc = "✅" if r["in_incident"] else "❌"
             status = "✅ OK" if r["fully_compliant"] else "⚠ GAPS"
         
-        print(f"│ {r['np_name']:<33} │ {room:^6} │ {gen:^7} │ {ann:^6} │ {inc:^8} │ {status:^8} │")
+        print(f"│ {r['np_name']:<33} │ {own:^8} │ {gen:^7} │ {ann:^6} │ {inc:^8} │ {status:^8} │")
     
-    print("└" + "─"*35 + "┴" + "─"*8 + "┴" + "─"*9 + "┴" + "─"*8 + "┴" + "─"*10 + "┴" + "─"*10 + "┘")
+    print("└" + "─"*35 + "┴" + "─"*10 + "┴" + "─"*9 + "┴" + "─"*8 + "┴" + "─"*10 + "┴" + "─"*10 + "┘")
     print(f"\n📊 {compliant_count} compliant, {unknown_count} unknown (missing handle)")
     
     # Save JSON
