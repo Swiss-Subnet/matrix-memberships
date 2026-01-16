@@ -238,6 +238,7 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
                     <th>General</th>
                     <th>Announcements</th>
                     <th>Incident</th>
+                    <th>Swiss Subnet</th>
                     <th>Status</th>
                 </tr>
             </thead>
@@ -270,12 +271,14 @@ GAP_SECTION
             gen = '<span class="unknown">?</span>'
             ann = '<span class="unknown">?</span>'
             inc = '<span class="unknown">?</span>'
+            swiss = '<span class="unknown">?</span>'
             status = '<span class="status-unknown">???</span>'
         else:
             own = '<span class="check">✓</span>' if r.get("in_own_room") else '<span class="cross">✗</span>'
             gen = '<span class="check">✓</span>' if r["in_general"] else '<span class="cross">✗</span>'
             ann = '<span class="check">✓</span>' if r["in_announcements"] else '<span class="cross">✗</span>'
             inc = '<span class="check">✓</span>' if r["in_incident"] else '<span class="cross">✗</span>'
+            swiss = '<span class="check">✓</span>' if r["in_swiss_subnet"] else '<span class="cross">✗</span>'
             status = '<span class="status-ok">OK</span>' if r.get("fully_compliant") else '<span class="status-gap">GAPS</span>'
         
         row = f"""                <tr>
@@ -287,6 +290,7 @@ GAP_SECTION
                     <td>{gen}</td>
                     <td>{ann}</td>
                     <td>{inc}</td>
+                    <td>{swiss}</td>
                     <td>{status}</td>
                 </tr>"""
         rows.append(row)
@@ -316,6 +320,8 @@ GAP_SECTION
                 gaps.append("#ic-node-providers-announcements")
             if not r.get("in_incident"):
                 gaps.append("#ic-node-providers-incident-response")
+            if not r.get("in_swiss_subnet"):
+                gaps.append("#ic-rented-subnet-swiss")
             
             if gaps:
                 gap_items.append(f"""            <div class="gap-item">

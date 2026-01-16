@@ -24,6 +24,7 @@ MANDATORY_ROOMS = {
     "general": "#ic-node-providers:matrix.org",
     "announcements": "#ic-node-providers-announcements:matrix.org",
     "incident": "#ic-node-providers-incident-response:matrix.org",
+    "swiss_subnet": "#ic-rented-subnet-swiss:matrix.org",
 }
 
 NODE_PROVIDERS_ROOM = {
@@ -47,15 +48,15 @@ NODE_PROVIDERS_HANDLE = {
     "AlpineDC SA": "@smorier:matrix.org",
     "NOKU SA": "@???",
     "Avalution AG": "@???",
-    "CoreLedger": "@???",
+    "CoreLedger": "@jevgeny:matrix.org",
     "Blockchain Innovation Group": "@blockchaininnovation:matrix.org",
     "LTIN AG": "@???",
     "achermann.swiss": "@???",
-    "Swiss Datalink AG": "@???",
-    "senseLAN": "@???",
+    "Swiss Datalink AG": "@bikepope:matrix.org",
+    "senseLAN": "@beefmagecafe:matrix.org",
     "vestra ICT AG": "@jonas.foser:matrix.org",
-    "SolNet": "@???",
-    "Decentralized": "@???",
+    "SolNet": "@lif:matrix.solnet.ch",
+    "Decentralized": "@decentralized_fl:matrix.org",
 }
 
 
@@ -122,10 +123,10 @@ def run_audit():
         handle_unknown = np_handle == "@???"
         
         if handle_unknown:
-            in_own_room = None
             in_general = None
             in_announcements = None
             in_incident = None
+            in_swiss_subnet = None
             fully_compliant = None
         else:
             # 1. Is NP in their own room?
@@ -140,7 +141,8 @@ def run_audit():
             in_general = np_handle in mandatory["general"]
             in_announcements = np_handle in mandatory["announcements"]
             in_incident = np_handle in mandatory["incident"]
-            fully_compliant = all([in_own_room, in_general, in_announcements, in_incident])
+            in_swiss_subnet = np_handle in mandatory["swiss_subnet"]
+            fully_compliant = all([in_own_room, in_general, in_announcements, in_incident, in_swiss_subnet])
         
         report.append({
             "np_name": np_name,
@@ -150,6 +152,7 @@ def run_audit():
             "in_general": in_general,
             "in_announcements": in_announcements,
             "in_incident": in_incident,
+            "in_swiss_subnet": in_swiss_subnet,
             "fully_compliant": fully_compliant
         })
     
@@ -157,27 +160,29 @@ def run_audit():
     compliant_count = sum(1 for r in report if r["fully_compliant"] == True)
     unknown_count = sum(1 for r in report if r["fully_compliant"] is None)
     
-    print("\n┌" + "─"*35 + "┬" + "─"*10 + "┬" + "─"*9 + "┬" + "─"*8 + "┬" + "─"*10 + "┬" + "─"*10 + "┐")
-    print(f"│ {'Node Provider':<33} │ {'Own Room':^8} │ {'General':^7} │ {'Announ':^6} │ {'Incident':^8} │ {'Status':^8} │")
-    print("├" + "─"*35 + "┼" + "─"*10 + "┼" + "─"*9 + "┼" + "─"*8 + "┼" + "─"*10 + "┼" + "─"*10 + "┤")
-    
+    print("\n┌" + "─"*35 + "┬" + "─"*10 + "┬" + "─"*9 + "┬" + "─"*8 + "┬" + "─"*10 + "┬" + "─"*14 + "┬" + "─"*10 + "┐")
+    print(f"│ {'Node Provider':<33} │ {'Own Room':^8} │ {'General':^7} │ {'Announ':^6} │ {'Incident':^8} │ {'Swiss Subnet':^12} │ {'Status':^8} │")
+    print("├" + "─"*35 + "┼" + "─"*10 + "┼" + "─"*9 + "┼" + "─"*8 + "┼" + "─"*10 + "┼" + "─"*14 + "┼" + "─"*10 + "┤")
+        
     for r in report:
         if r["in_general"] is None:
             own = "❓"
             gen = "❓"
             ann = "❓"
             inc = "❓"
+            swiss = "❓"
             status = "❓ ???"
         else:
             own = "✅" if r["in_own_room"] else "❌"
             gen = "✅" if r["in_general"] else "❌"
             ann = "✅" if r["in_announcements"] else "❌"
             inc = "✅" if r["in_incident"] else "❌"
+            swiss = "✅" if r["in_swiss_subnet"] else "❌"
             status = "✅ OK" if r["fully_compliant"] else "⚠ GAPS"
         
-        print(f"│ {r['np_name']:<33} │ {own:^8} │ {gen:^7} │ {ann:^6} │ {inc:^8} │ {status:^8} │")
+        print(f"│ {r['np_name']:<33} │ {own:^8} │ {gen:^7} │ {ann:^6} │ {inc:^8} │ {swiss:^12} │ {status:^8} │")
     
-    print("└" + "─"*35 + "┴" + "─"*10 + "┴" + "─"*9 + "┴" + "─"*8 + "┴" + "─"*10 + "┴" + "─"*10 + "┘")
+    print("└" + "─"*35 + "┴" + "─"*10 + "┴" + "─"*9 + "┴" + "─"*8 + "┴" + "─"*10 + "┴" + "─"*14 + "┴" + "─"*10 + "┘")
     print(f"\n📊 {compliant_count} compliant, {unknown_count} unknown (missing handle)")
     
     # Save JSON
