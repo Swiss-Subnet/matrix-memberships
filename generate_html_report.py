@@ -8,6 +8,58 @@ import json
 from datetime import datetime
 
 
+def generate_gap_section(report: list) -> str:
+    """Generate the gap section HTML from report data."""
+    gap_items = []
+    for r in report:
+        if r.get("fully_compliant") == True:
+            continue
+            
+        handle = r.get("np_handle", "@???")
+        
+        if r.get("in_general") is None:
+            # Unknown handle
+            gap_items.append(f"""            <div class="gap-item unknown">
+                <h3>{r['np_name']}</h3>
+                <p>Room: <code>{r.get('np_room', 'N/A')}</code></p>
+                <p class="missing">⚠ Missing Matrix handle - cannot check room membership</p>
+            </div>""")
+        else:
+            gaps = []
+            if not r.get("in_own_room"):
+                gaps.append("Own room")
+            if not r.get("in_general"):
+                gaps.append("#ic-node-providers")
+            if not r.get("in_announcements"):
+                gaps.append("#ic-node-providers-announcements")
+            if not r.get("in_incident"):
+                gaps.append("#ic-node-providers-incident-response")
+            if not r.get("in_swiss_subnet"):
+                gaps.append("#ic-rented-subnet-swiss")
+            
+            if gaps:
+                gap_items.append(f"""            <div class="gap-item">
+                <h3>{r['np_name']}</h3>
+                <p>Handle: <code>{handle}</code></p>
+                <p class="missing">Missing: {', '.join(gaps)}</p>
+            </div>""")
+    
+    if gap_items:
+        return f"""
+        <div class="gap-section">
+            <h2>Detailed Gap List</h2>
+{"".join(gap_items)}
+        </div>"""
+    else:
+        return """
+        <div class="gap-section">
+            <div class="all-compliant">
+                <h2>All Node Providers are fully compliant</h2>
+            </div>
+        </div>"""
+
+
+
 def generate_html_report(input_file: str = "np_audit_report.json", output_file: str = "np_audit_report.html"):
     """Generate HTML report from JSON data."""
     
@@ -246,14 +298,15 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
 TABLE_ROWS
             </tbody>
         </table>
-        
+        <!-- 
         <div class="legend">
             <span>✓ Yes</span>
             <span>✗ No</span>
             <span>? Unknown</span>
         </div>
-
-GAP_SECTION
+        -->
+      <!-- GAP_SECTION  -->
+ 
         
         <p class="timestamp">Generated: TIMESTAMP</p>
     </div>
@@ -295,54 +348,8 @@ GAP_SECTION
                 </tr>"""
         rows.append(row)
     
-    # Generate gap section
-    gap_items = []
-    for r in report:
-        if r.get("fully_compliant") == True:
-            continue
-            
-        handle = r.get("np_handle", "@???")
-        
-        if r.get("in_general") is None:
-            # Unknown handle
-            gap_items.append(f"""            <div class="gap-item unknown">
-                <h3>{r['np_name']}</h3>
-                <p>Room: <code>{r.get('np_room', 'N/A')}</code></p>
-                <p class="missing">⚠ Missing Matrix handle - cannot check room membership</p>
-            </div>""")
-        else:
-            gaps = []
-            if not r.get("in_own_room"):
-                gaps.append("Own room")
-            if not r.get("in_general"):
-                gaps.append("#ic-node-providers")
-            if not r.get("in_announcements"):
-                gaps.append("#ic-node-providers-announcements")
-            if not r.get("in_incident"):
-                gaps.append("#ic-node-providers-incident-response")
-            if not r.get("in_swiss_subnet"):
-                gaps.append("#ic-rented-subnet-swiss")
-            
-            if gaps:
-                gap_items.append(f"""            <div class="gap-item">
-                <h3>{r['np_name']}</h3>
-                <p>Handle: <code>{handle}</code></p>
-                <p class="missing">Missing: {', '.join(gaps)}</p>
-            </div>""")
-    
-    if gap_items:
-        gap_section = f"""
-        <div class="gap-section">
-            <h2>Detailed Gap List</h2>
-{"".join(gap_items)}
-        </div>"""
-    else:
-        gap_section = """
-        <div class="gap-section">
-            <div class="all-compliant">
-                <h2>All Node Providers are fully compliant</h2>
-            </div>
-        </div>"""
+    # Generate gap section (commented out in HTML)
+    # gap_section = generate_gap_section(report)
     
     # Fill in template
     html = html.replace("COMPLIANT_COUNT", str(compliant_count))
@@ -350,7 +357,7 @@ GAP_SECTION
     html = html.replace("UNKNOWN_COUNT", str(unknown_count))
     html = html.replace("TOTAL_COUNT", str(total_count))
     html = html.replace("TABLE_ROWS", "\n".join(rows))
-    html = html.replace("GAP_SECTION", gap_section)
+    # html = html.replace("GAP_SECTION", gap_section)
     html = html.replace("TIMESTAMP", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     
     with open(output_file, "w") as f:
