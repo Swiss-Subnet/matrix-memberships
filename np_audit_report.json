@@ -1,0 +1,153 @@
+{
+  "node_providers": [
+    {
+      "np_name": "Aitubi AG",
+      "np_room": "#ic-node-provider-znw2p:matrix.org",
+      "np_handle": "@ic.aitubi:matrix.org",
+      "in_own_room": false,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": false,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "AlpineDC SA",
+      "np_room": "#ic-node-provider-mrfhx:matrix.org",
+      "np_handle": "@smorier:matrix.org",
+      "in_own_room": true,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "NOKU SA",
+      "np_room": "#ic-node-provider-64kb5:matrix.org",
+      "np_handle": "@???",
+      "in_own_room": true,
+      "in_general": null,
+      "in_announcements": null,
+      "in_incident": null,
+      "in_swiss_subnet": null,
+      "fully_compliant": null
+    },
+    {
+      "np_name": "Avalution AG",
+      "np_room": "#ic-node-provider-is2tg:matrix.org",
+      "np_handle": "@philipp.netzer:matrix.org",
+      "in_own_room": true,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": true
+    },
+    {
+      "np_name": "CoreLedger",
+      "np_room": "#ic-node-provider-g4gfo:matrix.org",
+      "np_handle": "@jevgeny:matrix.org",
+      "in_own_room": true,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": false,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "Blockchain Innovation Group",
+      "np_room": "#ic-node-provider-c3i3u:matrix.org",
+      "np_handle": "@blockchaininnovation:matrix.org",
+      "in_own_room": true,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": true
+    },
+    {
+      "np_name": "LTIN AG",
+      "np_room": "#ic-node-provider-qpwbv:matrix.org",
+      "np_handle": "@sachauhlmann:matrix.org",
+      "in_own_room": true,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "achermann.swiss",
+      "np_room": "#ic-node-provider-gjsts:matrix.org",
+      "np_handle": "@???",
+      "in_own_room": true,
+      "in_general": null,
+      "in_announcements": null,
+      "in_incident": null,
+      "in_swiss_subnet": null,
+      "fully_compliant": null
+    },
+    {
+      "np_name": "Swiss Datalink AG",
+      "np_room": "#ic-node-provider-hycj4:matrix.org",
+      "np_handle": "@bikepope:matrix.org",
+      "in_own_room": true,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": false,
+      "in_swiss_subnet": true,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "senseLAN",
+      "np_room": "#ic-node-provider-f5kd2:matrix.org",
+      "np_handle": "@beefmagecafe:matrix.org",
+      "in_own_room": true,
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "vestra ICT AG",
+      "np_room": "#ic-node-provider-izdfy:matrix.org",
+      "np_handle": "@jonas.foser:matrix.org",
+      "in_own_room": true,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": true
+    },
+    {
+      "np_name": "SolNet",
+      "np_room": "#ic-node-provider-mf6om:matrix.org",
+      "np_handle": "@lif:matrix.solnet.ch",
+      "in_own_room": true,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": false,
+      "fully_compliant": false
+    },
+    {
+      "np_name": "Decentralized",
+      "np_room": "#ic-node-provider-hokzb:matrix.org",
+      "np_handle": "@decentralized_fl:matrix.org",
+      "in_own_room": false,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": false,
+      "fully_compliant": false
+    }
+  ],
+  "summary": {
+    "total": 13,
+    "compliant": 3,
+    "unknown": 2,
+    "with_gaps": 8
+  }
+}

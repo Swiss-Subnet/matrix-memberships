@@ -2,8 +2,8 @@
 .env
 
 # Output files
-np_audit_report.json
-#np_audit_report.html
+#np_audit_report.json
+np_audit_report.html
 
 
 # Python
