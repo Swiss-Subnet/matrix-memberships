@@ -255,11 +255,8 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">
-                <div class="logo-icon">+</div>
-                <div class="logo-text">Swiss Subnet<br>Node Provider Audit</div>
-            </div>
-            <h1>Matrix Room<br><span>Compliance</span></h1>
+            <h1>Matrix Room<br><span>Compliance</span> </h1>
+            <p class="subtitle">Generated: TIMESTAMP</p>
             <p class="subtitle">Audit report showing which Node Providers have joined the required Matrix communication channels.</p>
         </div>
         
@@ -306,9 +303,6 @@ TABLE_ROWS
         </div>
         -->
       <!-- GAP_SECTION  -->
- 
-        
-        <p class="timestamp">Generated: TIMESTAMP</p>
     </div>
 </body>
 </html>"""
