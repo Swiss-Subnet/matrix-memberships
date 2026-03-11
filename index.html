@@ -437,11 +437,13 @@
 
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = report.map(r => {
-      const handleClass = r.np_handle === '@???' ? 'np-handle missing' : 'np-handle';
+      const handlesHtml = r.np_handles.length === 0
+        ? '<div class="np-handle missing">No handles configured</div>'
+        : r.np_handles.map(h => `<div class="np-handle">${h}</div>`).join('');
       return `<tr>
         <td>
           <div class="np-name">${r.np_name}</div>
-          <div class="${handleClass}">${r.np_handle}</div>
+          ${handlesHtml}
         </td>
         ${cell(r.in_own_room)}
         ${cell(r.in_general)}
@@ -465,8 +467,7 @@
         if (r.fully_compliant === null) {
           return `<div class="gap-card unknown-card">
             <h4>${r.np_name}</h4>
-            <div class="gap-handle">Room: ${r.np_room}</div>
-            <div class="gap-missing">⚠ Missing Matrix handle — cannot check room membership</div>
+            <div class="gap-missing">No handles configured — cannot check room membership</div>
           </div>`;
         }
         const missing = [];
@@ -475,9 +476,10 @@
         if (!r.in_announcements) missing.push('#ic-node-providers-announcements');
         if (!r.in_incident)      missing.push('#ic-node-providers-incident-response');
         if (!r.in_swiss_subnet)  missing.push('#ic-rented-subnet-swiss');
+        const handlesStr = r.np_handles.join(', ');
         return `<div class="gap-card">
           <h4>${r.np_name}</h4>
-          <div class="gap-handle">${r.np_handle}</div>
+          <div class="gap-handle">${handlesStr}</div>
           <div class="gap-missing">Missing: ${missing.join(', ')}</div>
         </div>`;
       }).join('');
@@ -553,28 +555,29 @@
       }
 
       // Step 3: compute compliance per NP
-      const report = node_providers.map(np => {
-        const handle = np.handle;
-        const unknown = handle === '@???';
+      const anyIn = (handles, memberSet) => handles.some(h => memberSet.has(h));
 
-        if (unknown) {
+      const report = node_providers.map(np => {
+        const handles = np.handles || [];
+
+        if (handles.length === 0) {
           return {
-            np_name: np.name, np_room: np.room, np_handle: handle,
+            np_name: np.name, np_room: np.room, np_handles: handles,
             in_own_room: null, in_general: null, in_announcements: null,
             in_incident: null, in_swiss_subnet: null, fully_compliant: null,
           };
         }
 
-        const ownMembers = members[np.room] || new Set();
-        const in_own_room      = ownMembers.has(handle);
-        const in_general       = (members[mandatory_rooms.general] || new Set()).has(handle);
-        const in_announcements = (members[mandatory_rooms.announcements] || new Set()).has(handle);
-        const in_incident      = (members[mandatory_rooms.incident] || new Set()).has(handle);
-        const in_swiss_subnet  = (members[mandatory_rooms.swiss_subnet] || new Set()).has(handle);
+        const ownMembers       = members[np.room] || new Set();
+        const in_own_room      = anyIn(handles, ownMembers);
+        const in_general       = anyIn(handles, members[mandatory_rooms.general]       || new Set());
+        const in_announcements = anyIn(handles, members[mandatory_rooms.announcements] || new Set());
+        const in_incident      = anyIn(handles, members[mandatory_rooms.incident]      || new Set());
+        const in_swiss_subnet  = anyIn(handles, members[mandatory_rooms.swiss_subnet]  || new Set());
         const fully_compliant  = in_own_room && in_general && in_announcements && in_incident && in_swiss_subnet;
 
         return {
-          np_name: np.name, np_room: np.room, np_handle: handle,
+          np_name: np.name, np_room: np.room, np_handles: handles,
           in_own_room, in_general, in_announcements, in_incident, in_swiss_subnet, fully_compliant,
         };
       });

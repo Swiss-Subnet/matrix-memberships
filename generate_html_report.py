@@ -1,68 +1,143 @@
 #!/usr/bin/env python3
 """
 HTML Report Generator for Matrix NP Audit
-Styled to match Swiss Subnet branding (subnet.ch)
 """
 
 import json
 from datetime import datetime
 
 
-def generate_gap_section(report: list) -> str:
-    """Generate the gap section HTML from report data."""
-    gap_items = []
-    for r in report:
-        if r.get("fully_compliant") == True:
-            continue
-            
-        handle = r.get("np_handle", "@???")
-        
-        if r.get("in_general") is None:
-            # Unknown handle
-            gap_items.append(f"""            <div class="gap-item unknown">
-                <h3>{r['np_name']}</h3>
-                <p>Room: <code>{r.get('np_room', 'N/A')}</code></p>
-                <p class="missing">⚠ Missing Matrix handle - cannot check room membership</p>
-            </div>""")
-        else:
-            gaps = []
-            if not r.get("in_own_room"):
-                gaps.append("Own room")
-            if not r.get("in_general"):
-                gaps.append("#ic-node-providers")
-            if not r.get("in_announcements"):
-                gaps.append("#ic-node-providers-announcements")
-            if not r.get("in_incident"):
-                gaps.append("#ic-node-providers-incident-response")
-            if not r.get("in_swiss_subnet"):
-                gaps.append("#ic-rented-subnet-swiss")
-            
-            if gaps:
-                gap_items.append(f"""            <div class="gap-item">
-                <h3>{r['np_name']}</h3>
-                <p>Handle: <code>{handle}</code></p>
-                <p class="missing">Missing: {', '.join(gaps)}</p>
-            </div>""")
-    
-    if gap_items:
-        return f"""
-        <div class="gap-section">
-            <h2>Detailed Gap List</h2>
-{"".join(gap_items)}
-        </div>"""
-    else:
-        return """
-        <div class="gap-section">
-            <div class="all-compliant">
-                <h2>All Node Providers are fully compliant</h2>
-            </div>
-        </div>"""
+CSS = """
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: #f4f4f5;
+      color: #111;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    .header { margin-bottom: 32px; }
+    .header-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .header h1 { font-size: 28px; font-weight: 700; line-height: 1.2; color: #111; }
+    .header h1 span { color: #c62828; }
+    .header .timestamp { font-size: 12px; color: #aaa; margin-top: 8px; }
+
+    .summary {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 24px;
+    }
+    .summary-cell { flex: 1; padding: 16px 20px; border-right: 1px solid #e0e0e0; }
+    .summary-cell:last-child { border-right: none; }
+    .summary-cell .num { font-size: 28px; font-weight: 700; line-height: 1; }
+    .summary-cell .lbl { font-size: 12px; font-weight: 500; color: #888; margin-top: 6px; }
+    .summary-cell.ok .num      { color: #2e7d32; }
+    .summary-cell.gap .num     { color: #c62828; }
+    .summary-cell.unknown .num { color: #e65100; }
+    .summary-cell.total .num   { color: #111; }
+
+    .table-wrap { background: #fff; border: 1px solid #e0e0e0; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #fff;
+      border-bottom: 2px solid #111;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      white-space: nowrap;
+    }
+    thead th:first-child { text-align: left; min-width: 180px; }
+    thead th:last-child { border-left: 1px solid #e0e0e0; }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: center;
+      vertical-align: middle;
+    }
+    tbody td:first-child { text-align: left; }
+    tbody td:last-child { border-left: 1px solid #e0e0e0; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .cell-ok      { background: #f1f8f1; color: #2e7d32; font-size: 15px; font-weight: 700; }
+    .cell-gap     { background: #fdf0f0; color: #c62828; font-size: 15px; font-weight: 700; }
+    .cell-unknown { background: #fdf7ee; color: #e65100; font-size: 15px; font-weight: 700; }
+
+    .np-name { font-weight: 600; font-size: 13px; }
+    .np-handle {
+      font-size: 11px; color: #999;
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      margin-top: 2px;
+    }
+    .np-handle.missing { color: #e65100; }
+
+    .badge { display: inline-block; padding: 3px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+    .badge-ok      { background: #e8f5e9; color: #2e7d32; }
+    .badge-gap     { background: #ffebee; color: #c62828; }
+    .badge-unknown { background: #fff3e0; color: #e65100; }
+
+    .gaps-section { margin-top: 24px; border: 1px solid #e0e0e0; background: #fff; }
+    .gaps-heading {
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid #e0e0e0;
+      color: #111;
+    }
+    .gaps-body { padding: 8px 16px 16px; }
+
+    .gap-card {
+      border-left: 3px solid #c62828;
+      padding: 12px 16px;
+      margin-top: 12px;
+      background: #fdf0f0;
+    }
+    .gap-card.unknown-card { border-left-color: #e65100; background: #fdf7ee; }
+    .gap-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .gap-card .gap-handles { font-size: 11px; font-family: 'SF Mono', 'Fira Mono', monospace; color: #666; margin-bottom: 6px; }
+    .gap-card .gap-missing { font-size: 12px; color: #c62828; }
+    .gap-card.unknown-card .gap-missing { color: #e65100; }
+"""
+
+
+def cell(value) -> str:
+    if value is True:
+        return '<td class="cell-ok">✓</td>'
+    if value is False:
+        return '<td class="cell-gap">✗</td>'
+    return '<td class="cell-unknown">?</td>'
+
+
+def badge(r: dict) -> str:
+    if r["fully_compliant"] is True:
+        return '<span class="badge badge-ok">OK</span>'
+    if r["fully_compliant"] is False:
+        return '<span class="badge badge-gap">GAPS</span>'
+    return '<span class="badge badge-unknown">???</span>'
+
+
+def handles_html(handles: list) -> str:
+    if not handles:
+        return '<div class="np-handle missing">No handles configured</div>'
+    return "".join(f'<div class="np-handle">{h}</div>' for h in handles)
 
 
 def generate_html_report(input_file: str = "np_audit_report.json", output_file: str = "np_audit_report.html"):
     """Generate HTML report from JSON data."""
-    
     try:
         with open(input_file, "r") as f:
             data = json.load(f)
@@ -72,291 +147,130 @@ def generate_html_report(input_file: str = "np_audit_report.json", output_file: 
     except json.JSONDecodeError:
         print(f"❌ Error: {input_file} is not valid JSON.")
         return
-    
-    report = data.get("node_providers", [])
-    summary = data.get("summary", {})
-    compliant_count = summary.get("compliant", 0)
-    total_count = summary.get("total", len(report))
-    unknown_count = summary.get("unknown", 0)
-    gap_count = summary.get("with_gaps", total_count - compliant_count - unknown_count)
-    
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Node Provider Matrix Audit Report</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #ffffff;
-            min-height: 100vh;
-            padding: 60px 40px;
-            color: #1a1a1a;
-            line-height: 1.6;
-        }
-        .container { max-width: 1100px; margin: 0 auto; }
-        .header { margin-bottom: 50px; }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-        }
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: #E53935;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .logo-text {
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            line-height: 1.2;
-        }
-        h1 {
-            font-size: 3.5rem;
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            color: #1a1a1a;
-        }
-        h1 span { color: #E53935; }
-        .subtitle {
-            font-size: 1.1rem;
-            color: #666;
-            max-width: 500px;
-        }
-        .summary {
-            display: flex;
-            gap: 40px;
-            margin: 50px 0;
-            padding: 30px 0;
-            border-top: 1px solid #eee;
-            border-bottom: 1px solid #eee;
-        }
-        .summary-card { text-align: left; }
-        .summary-card .number {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            line-height: 1;
-        }
-        .summary-card.warning .number { color: #E53935; }
-        .summary-card.success .number { color: #2E7D32; }
-        .summary-card.unknown .number { color: #FF9800; }
-        .summary-card .label {
-            color: #888;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 30px;
-        }
-        th {
-            text-align: left;
-            padding: 12px 16px;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.5px;
-            color: #888;
-            border-bottom: 2px solid #1a1a1a;
-        }
-        th:not(:first-child) { text-align: center; }
-        td {
-            padding: 16px;
-            border-bottom: 1px solid #eee;
-            font-size: 0.95rem;
-        }
-        td:not(:first-child) { text-align: center; }
-        tr:hover { background: #fafafa; }
-        .status-ok { color: #2E7D32; font-weight: 600; }
-        .status-gap { color: #E53935; font-weight: 600; }
-        .status-unknown { color: #FF9800; font-weight: 600; }
-        .check { color: #2E7D32; font-size: 1.1rem; }
-        .cross { color: #E53935; font-size: 1.1rem; }
-        .unknown { color: #FF9800; font-size: 1.1rem; }
-        .np-name { font-weight: 600; color: #1a1a1a; }
-        .np-handle {
-            font-size: 0.75rem;
-            color: #999;
-            font-family: 'SF Mono', Monaco, monospace;
-            margin-top: 4px;
-        }
-        .np-handle.missing { color: #FF9800; }
-        .legend {
-            margin-top: 30px;
-            color: #888;
-            font-size: 0.85rem;
-        }
-        .legend span { margin-right: 24px; }
-        .timestamp {
-            margin-top: 40px;
-            color: #ccc;
-            font-size: 0.8rem;
-        }
-        .gap-section {
-            margin-top: 60px;
-            padding-top: 40px;
-            border-top: 1px solid #eee;
-        }
-        .gap-section h2 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 24px;
-            color: #1a1a1a;
-        }
-        .gap-item {
-            background: #fff;
-            border-left: 3px solid #E53935;
-            padding: 20px 24px;
-            margin-bottom: 16px;
-        }
-        .gap-item.unknown { border-left-color: #FF9800; }
-        .gap-item h3 {
-            color: #1a1a1a;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        .gap-item p {
-            color: #666;
-            font-size: 0.9rem;
-            margin: 4px 0;
-        }
-        .gap-item code {
-            background: #f5f5f5;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.8rem;
-        }
-        .gap-item .missing { color: #E53935; font-weight: 500; }
-        .all-compliant {
-            background: #E8F5E9;
-            border-left: 3px solid #2E7D32;
-            padding: 24px;
-        }
-        .all-compliant h2 { color: #2E7D32; margin: 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Matrix Room<br><span>Compliance</span> </h1>
-            <p class="subtitle">Generated: TIMESTAMP</p>
-            <p class="subtitle">Audit report showing which Node Providers have joined the required Matrix communication channels.</p>
-        </div>
-        
-        <div class="summary">
-            <div class="summary-card success">
-                <div class="number">COMPLIANT_COUNT</div>
-                <div class="label">Fully Compliant</div>
-            </div>
-            <div class="summary-card warning">
-                <div class="number">GAP_COUNT</div>
-                <div class="label">With Gaps</div>
-            </div>
-            <div class="summary-card unknown">
-                <div class="number">UNKNOWN_COUNT</div>
-                <div class="label">Unknown Handle</div>
-            </div>
-            <div class="summary-card">
-                <div class="number">TOTAL_COUNT</div>
-                <div class="label">Total NPs</div>
-            </div>
-        </div>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>Node Provider</th>
-                    <th>Own Room</th>
-                    <th>General</th>
-                    <th>Announcements</th>
-                    <th>Incident</th>
-                    <th>Swiss Subnet</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-TABLE_ROWS
-            </tbody>
-        </table>
-        <!-- 
-        <div class="legend">
-            <span>✓ Yes</span>
-            <span>✗ No</span>
-            <span>? Unknown</span>
-        </div>
-        -->
-      <!-- GAP_SECTION  -->
-    </div>
-</body>
-</html>"""
-    
-    # Generate table rows
+
+    report   = data.get("node_providers", [])
+    summary  = data.get("summary", {})
+    total    = summary.get("total", len(report))
+    compliant = summary.get("compliant", 0)
+    unknown  = summary.get("unknown", 0)
+    gaps     = summary.get("with_gaps", total - compliant - unknown)
+    ts       = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Table rows
     rows = []
     for r in report:
-        handle = r.get("np_handle", "@???")
-        handle_class = "np-handle missing" if handle == "@???" else "np-handle"
-        
-        if r.get("in_general") is None:
-            own = '<span class="unknown">?</span>'
-            gen = '<span class="unknown">?</span>'
-            ann = '<span class="unknown">?</span>'
-            inc = '<span class="unknown">?</span>'
-            swiss = '<span class="unknown">?</span>'
-            status = '<span class="status-unknown">???</span>'
+        handles = r.get("np_handles", [])
+        rows.append(f"""
+            <tr>
+              <td>
+                <div class="np-name">{r['np_name']}</div>
+                {handles_html(handles)}
+              </td>
+              {cell(r.get("in_own_room"))}
+              {cell(r.get("in_general"))}
+              {cell(r.get("in_announcements"))}
+              {cell(r.get("in_incident"))}
+              {cell(r.get("in_swiss_subnet"))}
+              <td>{badge(r)}</td>
+            </tr>""")
+
+    # Gap cards
+    gap_cards = []
+    for r in report:
+        if r.get("fully_compliant") is True:
+            continue
+        handles = r.get("np_handles", [])
+        if r.get("fully_compliant") is None:
+            gap_cards.append(f"""
+            <div class="gap-card unknown-card">
+              <h4>{r['np_name']}</h4>
+              <div class="gap-missing">No handles configured — cannot check room membership</div>
+            </div>""")
         else:
-            own = '<span class="check">✓</span>' if r.get("in_own_room") else '<span class="cross">✗</span>'
-            gen = '<span class="check">✓</span>' if r["in_general"] else '<span class="cross">✗</span>'
-            ann = '<span class="check">✓</span>' if r["in_announcements"] else '<span class="cross">✗</span>'
-            inc = '<span class="check">✓</span>' if r["in_incident"] else '<span class="cross">✗</span>'
-            swiss = '<span class="check">✓</span>' if r["in_swiss_subnet"] else '<span class="cross">✗</span>'
-            status = '<span class="status-ok">OK</span>' if r.get("fully_compliant") else '<span class="status-gap">GAPS</span>'
-        
-        row = f"""                <tr>
-                    <td>
-                        <div class="np-name">{r['np_name']}</div>
-                        <div class="{handle_class}">{handle}</div>
-                    </td>
-                    <td>{own}</td>
-                    <td>{gen}</td>
-                    <td>{ann}</td>
-                    <td>{inc}</td>
-                    <td>{swiss}</td>
-                    <td>{status}</td>
-                </tr>"""
-        rows.append(row)
-    
-    # Generate gap section (commented out in HTML)
-    # gap_section = generate_gap_section(report)
-    
-    # Fill in template
-    html = html.replace("COMPLIANT_COUNT", str(compliant_count))
-    html = html.replace("GAP_COUNT", str(gap_count))
-    html = html.replace("UNKNOWN_COUNT", str(unknown_count))
-    html = html.replace("TOTAL_COUNT", str(total_count))
-    html = html.replace("TABLE_ROWS", "\n".join(rows))
-    # html = html.replace("GAP_SECTION", gap_section)
-    html = html.replace("TIMESTAMP", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    
+            missing = []
+            if not r.get("in_own_room"):      missing.append("Own room")
+            if not r.get("in_general"):       missing.append("#ic-node-providers")
+            if not r.get("in_announcements"): missing.append("#ic-node-providers-announcements")
+            if not r.get("in_incident"):      missing.append("#ic-node-providers-incident-response")
+            if not r.get("in_swiss_subnet"):  missing.append("#ic-rented-subnet-swiss")
+            handles_str = ", ".join(handles)
+            gap_cards.append(f"""
+            <div class="gap-card">
+              <h4>{r['np_name']}</h4>
+              <div class="gap-handles">{handles_str}</div>
+              <div class="gap-missing">Missing: {", ".join(missing)}</div>
+            </div>""")
+
+    gaps_section = ""
+    if gap_cards:
+        gaps_section = f"""
+    <div class="gaps-section">
+      <div class="gaps-heading">Detailed Gap List</div>
+      <div class="gaps-body">{"".join(gap_cards)}
+      </div>
+    </div>"""
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix Room Compliance Audit</title>
+  <style>{CSS}
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">Swiss Subnet · Internet Computer</div>
+    <h1>Matrix Room <span>Compliance</span> Audit</h1>
+    <div class="timestamp">Generated: {ts}</div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-cell ok">
+      <div class="num">{compliant}</div>
+      <div class="lbl">Fully Compliant</div>
+    </div>
+    <div class="summary-cell gap">
+      <div class="num">{gaps}</div>
+      <div class="lbl">With Gaps</div>
+    </div>
+    <div class="summary-cell unknown">
+      <div class="num">{unknown}</div>
+      <div class="lbl">Unknown Handle</div>
+    </div>
+    <div class="summary-cell total">
+      <div class="num">{total}</div>
+      <div class="lbl">Total NPs</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Node Provider</th>
+          <th>Own Room</th>
+          <th>General</th>
+          <th>Announcements</th>
+          <th>Incident</th>
+          <th>Swiss Subnet</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>{"".join(rows)}
+      </tbody>
+    </table>
+  </div>
+{gaps_section}
+</div>
+</body>
+</html>"""
+
     with open(output_file, "w") as f:
         f.write(html)
-    
     print(f"✅ HTML report generated: {output_file}")
 
 
