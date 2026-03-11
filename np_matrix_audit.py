@@ -20,44 +20,13 @@ load_dotenv()
 HOMESERVER = os.getenv("MATRIX_HOMESERVER", "https://matrix.org")
 ACCESS_TOKEN = os.getenv("MATRIX_ACCESS_TOKEN")
 
-MANDATORY_ROOMS = {
-    "general": "#ic-node-providers:matrix.org",
-    "announcements": "#ic-node-providers-announcements:matrix.org",
-    "incident": "#ic-node-providers-incident-response:matrix.org",
-    "swiss_subnet": "#ic-rented-subnet-swiss:matrix.org",
-}
+_config_path = os.path.join(os.path.dirname(__file__), "config.json")
+with open(_config_path) as _f:
+    _config = json.load(_f)
 
-NODE_PROVIDERS_ROOM = {
-    "Aitubi AG": "#ic-node-provider-znw2p:matrix.org",
-    "AlpineDC SA": "#ic-node-provider-mrfhx:matrix.org",
-    "NOKU SA": "#ic-node-provider-64kb5:matrix.org",
-    "Avalution AG": "#ic-node-provider-is2tg:matrix.org",
-    "CoreLedger": "#ic-node-provider-g4gfo:matrix.org",
-    "Blockchain Innovation Group": "#ic-node-provider-c3i3u:matrix.org",
-    "LTIN AG": "#ic-node-provider-qpwbv:matrix.org",
-    "achermann.swiss": "#ic-node-provider-gjsts:matrix.org",
-    "Swiss Datalink AG": "#ic-node-provider-hycj4:matrix.org",
-    "senseLAN": "#ic-node-provider-f5kd2:matrix.org",
-    "vestra ICT AG": "#ic-node-provider-izdfy:matrix.org",
-    "SolNet": "#ic-node-provider-mf6om:matrix.org",
-    "Decentralized": "#ic-node-provider-hokzb:matrix.org",
-}
-
-NODE_PROVIDERS_HANDLE = {
-    "Aitubi AG": "@ic.aitubi:matrix.org",
-    "AlpineDC SA": "@smorier:matrix.org",
-    "NOKU SA": "@???",
-    "Avalution AG": "@philipp.netzer:matrix.org",
-    "CoreLedger": "@jevgeny:matrix.org",
-    "Blockchain Innovation Group": "@blockchaininnovation:matrix.org",
-    "LTIN AG": "@sachauhlmann:matrix.org",
-    "achermann.swiss": "@???",
-    "Swiss Datalink AG": "@bikepope:matrix.org",
-    "senseLAN": "@beefmagecafe:matrix.org",
-    "vestra ICT AG": "@jonas.foser:matrix.org",
-    "SolNet": "@lif:matrix.solnet.ch",
-    "Decentralized": "@decentralized_fl:matrix.org",
-}
+MANDATORY_ROOMS = _config["mandatory_rooms"]
+NODE_PROVIDERS_ROOM = {np["name"]: np["room"] for np in _config["node_providers"]}
+NODE_PROVIDERS_HANDLE = {np["name"]: np["handle"] for np in _config["node_providers"]}
 
 
 def get_headers():

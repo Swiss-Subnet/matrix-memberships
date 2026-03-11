@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix Room Compliance Audit</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: #f4f4f5;
+      color: #111;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Header ── */
+    .header { margin-bottom: 32px; }
+    .header-eyebrow {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #111;
+    }
+    .header h1 span { color: #c62828; }
+
+    /* ── Config bar ── */
+    .config-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    .config-bar label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-right: 4px;
+    }
+    .config-bar input {
+      border: 1px solid #d0d0d0;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      background: #fafafa;
+      color: #111;
+    }
+    .config-bar input:focus { border-color: #111; background: #fff; }
+    #input-homeserver { width: 220px; }
+    #input-token { width: 260px; }
+    .btn-run {
+      padding: 8px 20px;
+      background: #111;
+      color: #fff;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      font-family: inherit;
+    }
+    .btn-run:hover { background: #333; }
+    .btn-run:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      font-size: 12px;
+      color: #666;
+      min-height: 20px;
+      margin-bottom: 20px;
+      padding: 0 2px;
+    }
+    .status-bar.error { color: #c62828; }
+    .status-bar.ok { color: #2e7d32; }
+
+    /* ── Summary strip ── */
+    .summary {
+      display: flex;
+      gap: 0;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 24px;
+    }
+    .summary-cell {
+      flex: 1;
+      padding: 16px 20px;
+      border-right: 1px solid #e0e0e0;
+    }
+    .summary-cell:last-child { border-right: none; }
+    .summary-cell .num {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .summary-cell .lbl {
+      font-size: 12px;
+      font-weight: 500;
+      color: #888;
+      margin-top: 6px;
+    }
+    .summary-cell.ok .num { color: #2e7d32; }
+    .summary-cell.gap .num { color: #c62828; }
+    .summary-cell.unknown .num { color: #e65100; }
+    .summary-cell.total .num { color: #111; }
+
+    /* ── Audit table ── */
+    .table-wrap {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      border-bottom: 2px solid #111;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      white-space: nowrap;
+      z-index: 1;
+    }
+    thead th:first-child { text-align: left; min-width: 180px; }
+    thead th:last-child { border-left: 1px solid #e0e0e0; }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      text-align: center;
+      vertical-align: middle;
+    }
+    tbody td:first-child { text-align: left; }
+    tbody td:last-child { border-left: 1px solid #e0e0e0; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* Cell states */
+    .cell-ok {
+      background: #f1f8f1;
+      color: #2e7d32;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .cell-gap {
+      background: #fdf0f0;
+      color: #c62828;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .cell-unknown {
+      background: #fdf7ee;
+      color: #e65100;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .np-name { font-weight: 600; font-size: 13px; }
+    .np-handle { font-size: 11px; color: #999; font-family: 'SF Mono', 'Fira Mono', monospace; margin-top: 2px; }
+    .np-handle.missing { color: #e65100; }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .badge-ok { background: #e8f5e9; color: #2e7d32; }
+    .badge-gap { background: #ffebee; color: #c62828; }
+    .badge-unknown { background: #fff3e0; color: #e65100; }
+
+    /* ── Gaps detail ── */
+    .gaps-section {
+      margin-top: 24px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+    }
+    .gaps-toggle {
+      width: 100%;
+      padding: 14px 16px;
+      background: none;
+      border: none;
+      text-align: left;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #111;
+    }
+    .gaps-toggle:hover { background: #fafafa; }
+    .gaps-toggle-arrow { font-size: 11px; color: #888; }
+    .gaps-body { display: none; padding: 0 16px 16px; }
+    .gaps-body.open { display: block; }
+
+    .gap-card {
+      border-left: 3px solid #c62828;
+      padding: 12px 16px;
+      margin-top: 12px;
+      background: #fdf0f0;
+    }
+    .gap-card.unknown-card { border-left-color: #e65100; background: #fdf7ee; }
+    .gap-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .gap-card .gap-handle { font-size: 11px; font-family: 'SF Mono', 'Fira Mono', monospace; color: #666; margin-bottom: 6px; }
+    .gap-card .gap-missing { font-size: 12px; color: #c62828; }
+    .gap-card.unknown-card .gap-missing { color: #e65100; }
+
+    /* ── Auth confirmation banner ── */
+    .auth-banner {
+      display: none;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      border: 1px solid #e0e0e0;
+      font-size: 12px;
+      align-items: center;
+      gap: 8px;
+    }
+    .auth-banner.ok {
+      display: flex;
+      background: #f1f8f1;
+      border-color: #a5d6a7;
+      color: #2e7d32;
+    }
+    .auth-banner.error {
+      display: flex;
+      background: #fdf0f0;
+      border-color: #ef9a9a;
+      color: #c62828;
+    }
+    .auth-banner .auth-icon { font-size: 14px; }
+    .auth-banner .auth-msg { font-weight: 500; }
+
+    /* Hide results until run */
+    .results { display: none; }
+    .results.visible { display: block; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">Swiss Subnet · Internet Computer</div>
+    <h1>Matrix Room <span>Compliance</span> Audit</h1>
+  </div>
+
+  <div class="config-bar">
+    <label for="input-homeserver">Homeserver</label>
+    <input id="input-homeserver" type="url" value="https://matrix.org" spellcheck="false">
+    <label for="input-token">Access Token</label>
+    <input id="input-token" type="password" placeholder="syt_…" spellcheck="false" autocomplete="off">
+    <button class="btn-run" id="btn-run" onclick="runAudit()">Run Audit</button>
+  </div>
+
+  <div class="auth-banner" id="auth-banner">
+    <span class="auth-icon" id="auth-icon"></span>
+    <span class="auth-msg" id="auth-msg"></span>
+  </div>
+
+  <div class="status-bar" id="status">Enter your Matrix access token and click Run Audit.</div>
+
+  <div class="results" id="results">
+
+    <div class="summary" id="summary">
+      <div class="summary-cell ok">
+        <div class="num" id="sum-ok">—</div>
+        <div class="lbl">Fully Compliant</div>
+      </div>
+      <div class="summary-cell gap">
+        <div class="num" id="sum-gap">—</div>
+        <div class="lbl">With Gaps</div>
+      </div>
+      <div class="summary-cell unknown">
+        <div class="num" id="sum-unknown">—</div>
+        <div class="lbl">Unknown Handle</div>
+      </div>
+      <div class="summary-cell total">
+        <div class="num" id="sum-total">—</div>
+        <div class="lbl">Total NPs</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Node Provider</th>
+            <th>Own Room</th>
+            <th>General</th>
+            <th>Announcements</th>
+            <th>Incident</th>
+            <th>Swiss Subnet</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="gaps-section" id="gaps-section" style="display:none">
+      <button class="gaps-toggle" onclick="toggleGaps()">
+        <span>Detailed Gap List</span>
+        <span class="gaps-toggle-arrow" id="gaps-arrow">▼ Show</span>
+      </button>
+      <div class="gaps-body" id="gaps-body"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let config = null;
+
+  const LS_HOMESERVER = 'matrix_audit_homeserver';
+  const LS_TOKEN      = 'matrix_audit_token';
+
+  function saveCredentials(homeserver, token) {
+    try {
+      localStorage.setItem(LS_HOMESERVER, homeserver);
+      localStorage.setItem(LS_TOKEN, token);
+    } catch (_) {}
+  }
+
+  function restoreCredentials() {
+    try {
+      const homeserver = localStorage.getItem(LS_HOMESERVER);
+      const token      = localStorage.getItem(LS_TOKEN);
+      if (homeserver) document.getElementById('input-homeserver').value = homeserver;
+      if (token)      document.getElementById('input-token').value = token;
+      if (token) setStatus('Credentials restored from last session. Click Run Audit to continue.');
+    } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', restoreCredentials);
+
+  async function loadConfig() {
+    const resp = await fetch('config.json');
+    if (!resp.ok) throw new Error('Could not load config.json');
+    return resp.json();
+  }
+
+  function setStatus(msg, cls = '') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status-bar ' + cls;
+  }
+
+  function showAuthBanner(state, msg) {
+    const banner = document.getElementById('auth-banner');
+    const icon   = document.getElementById('auth-icon');
+    const msgEl  = document.getElementById('auth-msg');
+    banner.className = 'auth-banner ' + state;
+    icon.textContent = state === 'ok' ? '✓' : '✗';
+    msgEl.textContent = msg;
+  }
+
+  function hideAuthBanner() {
+    document.getElementById('auth-banner').className = 'auth-banner';
+  }
+
+  async function validateCredentials(homeserver, token) {
+    const url = `${homeserver}/_matrix/client/v3/account/whoami`;
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) {
+      const data = await resp.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    return data.user_id;
+  }
+
+  function encodeAlias(alias) {
+    return alias.replace('#', '%23').replace(':', '%3A');
+  }
+
+  async function resolveRoom(homeserver, token, alias) {
+    const url = `${homeserver}/_matrix/client/v3/directory/room/${encodeAlias(alias)}`;
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.room_id || null;
+  }
+
+  async function getMembers(homeserver, token, roomId) {
+    const url = `${homeserver}/_matrix/client/v3/rooms/${roomId}/joined_members`;
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) return new Set();
+    const data = await resp.json();
+    return new Set(Object.keys(data.joined || {}));
+  }
+
+  function cell(state) {
+    if (state === true)  return `<td class="cell-ok">✓</td>`;
+    if (state === false) return `<td class="cell-gap">✗</td>`;
+    return `<td class="cell-unknown">?</td>`;
+  }
+
+  function badge(r) {
+    if (r.fully_compliant === true)  return '<span class="badge badge-ok">OK</span>';
+    if (r.fully_compliant === false) return '<span class="badge badge-gap">GAPS</span>';
+    return '<span class="badge badge-unknown">???</span>';
+  }
+
+  function renderResults(report) {
+    const ok      = report.filter(r => r.fully_compliant === true).length;
+    const gap     = report.filter(r => r.fully_compliant === false).length;
+    const unknown = report.filter(r => r.fully_compliant === null).length;
+
+    document.getElementById('sum-ok').textContent      = ok;
+    document.getElementById('sum-gap').textContent     = gap;
+    document.getElementById('sum-unknown').textContent = unknown;
+    document.getElementById('sum-total').textContent   = report.length;
+
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = report.map(r => {
+      const handleClass = r.np_handle === '@???' ? 'np-handle missing' : 'np-handle';
+      return `<tr>
+        <td>
+          <div class="np-name">${r.np_name}</div>
+          <div class="${handleClass}">${r.np_handle}</div>
+        </td>
+        ${cell(r.in_own_room)}
+        ${cell(r.in_general)}
+        ${cell(r.in_announcements)}
+        ${cell(r.in_incident)}
+        ${cell(r.in_swiss_subnet)}
+        <td>${badge(r)}</td>
+      </tr>`;
+    }).join('');
+
+    // Gaps detail
+    const gapNPs = report.filter(r => r.fully_compliant !== true);
+    const gapsSection = document.getElementById('gaps-section');
+    const gapsBody = document.getElementById('gaps-body');
+
+    if (gapNPs.length === 0) {
+      gapsSection.style.display = 'none';
+    } else {
+      gapsSection.style.display = '';
+      gapsBody.innerHTML = gapNPs.map(r => {
+        if (r.fully_compliant === null) {
+          return `<div class="gap-card unknown-card">
+            <h4>${r.np_name}</h4>
+            <div class="gap-handle">Room: ${r.np_room}</div>
+            <div class="gap-missing">⚠ Missing Matrix handle — cannot check room membership</div>
+          </div>`;
+        }
+        const missing = [];
+        if (!r.in_own_room)      missing.push('Own room');
+        if (!r.in_general)       missing.push('#ic-node-providers');
+        if (!r.in_announcements) missing.push('#ic-node-providers-announcements');
+        if (!r.in_incident)      missing.push('#ic-node-providers-incident-response');
+        if (!r.in_swiss_subnet)  missing.push('#ic-rented-subnet-swiss');
+        return `<div class="gap-card">
+          <h4>${r.np_name}</h4>
+          <div class="gap-handle">${r.np_handle}</div>
+          <div class="gap-missing">Missing: ${missing.join(', ')}</div>
+        </div>`;
+      }).join('');
+    }
+
+    document.getElementById('results').className = 'results visible';
+  }
+
+  function toggleGaps() {
+    const body = document.getElementById('gaps-body');
+    const arrow = document.getElementById('gaps-arrow');
+    const open = body.classList.toggle('open');
+    arrow.textContent = open ? '▲ Hide' : '▼ Show';
+  }
+
+  async function runAudit() {
+    const homeserver = document.getElementById('input-homeserver').value.trim().replace(/\/$/, '');
+    const token = document.getElementById('input-token').value.trim();
+    const btn = document.getElementById('btn-run');
+
+    if (!token) { setStatus('Access token is required.', 'error'); return; }
+
+    btn.disabled = true;
+    hideAuthBanner();
+    document.getElementById('results').className = 'results';
+
+    try {
+      if (!config) {
+        setStatus('Loading config…');
+        config = await loadConfig();
+      }
+
+      // Validate credentials before running the audit
+      setStatus('Validating credentials…');
+      let userId;
+      try {
+        userId = await validateCredentials(homeserver, token);
+      } catch (err) {
+        showAuthBanner('error', `Authentication failed: ${err.message}`);
+        setStatus('Could not connect — check your homeserver URL and access token.', 'error');
+        btn.disabled = false;
+        return;
+      }
+      showAuthBanner('ok', `Connected as ${userId} on ${homeserver}`);
+      saveCredentials(homeserver, token);
+
+      const { mandatory_rooms, node_providers } = config;
+
+      // Step 1: resolve all room aliases
+      const allAliases = new Set([
+        ...Object.values(mandatory_rooms),
+        ...node_providers.map(np => np.room),
+      ]);
+      const roomIds = {};
+      let resolved = 0;
+      const total = allAliases.size;
+
+      for (const alias of allAliases) {
+        setStatus(`Resolving rooms… ${resolved}/${total}`);
+        roomIds[alias] = await resolveRoom(homeserver, token, alias);
+        resolved++;
+      }
+
+      // Step 2: fetch members for each resolved room
+      const members = {};
+      let fetched = 0;
+      const resolvedRooms = Object.entries(roomIds).filter(([, id]) => id !== null);
+
+      for (const [alias, roomId] of resolvedRooms) {
+        setStatus(`Fetching members… ${fetched}/${resolvedRooms.length}`);
+        members[alias] = await getMembers(homeserver, token, roomId);
+        fetched++;
+      }
+
+      // Step 3: compute compliance per NP
+      const report = node_providers.map(np => {
+        const handle = np.handle;
+        const unknown = handle === '@???';
+
+        if (unknown) {
+          return {
+            np_name: np.name, np_room: np.room, np_handle: handle,
+            in_own_room: null, in_general: null, in_announcements: null,
+            in_incident: null, in_swiss_subnet: null, fully_compliant: null,
+          };
+        }
+
+        const ownMembers = members[np.room] || new Set();
+        const in_own_room      = ownMembers.has(handle);
+        const in_general       = (members[mandatory_rooms.general] || new Set()).has(handle);
+        const in_announcements = (members[mandatory_rooms.announcements] || new Set()).has(handle);
+        const in_incident      = (members[mandatory_rooms.incident] || new Set()).has(handle);
+        const in_swiss_subnet  = (members[mandatory_rooms.swiss_subnet] || new Set()).has(handle);
+        const fully_compliant  = in_own_room && in_general && in_announcements && in_incident && in_swiss_subnet;
+
+        return {
+          np_name: np.name, np_room: np.room, np_handle: handle,
+          in_own_room, in_general, in_announcements, in_incident, in_swiss_subnet, fully_compliant,
+        };
+      });
+
+      renderResults(report);
+      const compliant = report.filter(r => r.fully_compliant === true).length;
+      const ts = new Date().toLocaleTimeString();
+      setStatus(`Audit complete at ${ts} — ${compliant}/${report.length} fully compliant.`, 'ok');
+
+    } catch (err) {
+      setStatus(`Error: ${err.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

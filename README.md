@@ -62,12 +62,30 @@ python generate_html_report.py
 | `np_audit_report.json` | Raw audit data in JSON format |
 | `np_audit_report.html` | Beautiful HTML report for viewing in browser |
 
+## Web App (GitHub Pages)
+
+`index.html` is a self-contained browser app that runs the same audit without any server-side code.
+
+**Run locally:**
+```bash
+python -m http.server 8000
+# open http://localhost:8000
+```
+
+Enter your Matrix homeserver URL and access token in the UI, then click **Run Audit**. Results appear inline with color-coded cells for instant visual spot checks — red cells mark missing memberships immediately.
+
+> The Matrix client-server API supports CORS, so the browser can call it directly without a proxy.
+
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
 | `np_matrix_audit.py` | Main audit script - fetches data from Matrix API |
 | `generate_html_report.py` | Generates HTML report from JSON data |
+
+## Configuration
+
+`config.json` is the single source of truth for room aliases and Node Provider handles. Both the Python script and the web app read from it. Edit this file to add/remove NPs or rooms.
 
 ## Important Notes
 

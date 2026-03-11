@@ -1,0 +1,75 @@
+{
+  "mandatory_rooms": {
+    "general": "#ic-node-providers:matrix.org",
+    "announcements": "#ic-node-providers-announcements:matrix.org",
+    "incident": "#ic-node-providers-incident-response:matrix.org",
+    "swiss_subnet": "#ic-rented-subnet-swiss:matrix.org"
+  },
+  "node_providers": [
+    {
+      "name": "Aitubi AG",
+      "room": "#ic-node-provider-znw2p:matrix.org",
+      "handle": "@ic.aitubi:matrix.org"
+    },
+    {
+      "name": "AlpineDC SA",
+      "room": "#ic-node-provider-mrfhx:matrix.org",
+      "handle": "@smorier:matrix.org"
+    },
+    {
+      "name": "NOKU SA",
+      "room": "#ic-node-provider-64kb5:matrix.org",
+      "handle": "@perlets:matrix.org"
+    },
+    {
+      "name": "Avalution AG",
+      "room": "#ic-node-provider-is2tg:matrix.org",
+      "handle": "@philipp.netzer:matrix.org"
+    },
+    {
+      "name": "CoreLedger",
+      "room": "#ic-node-provider-g4gfo:matrix.org",
+      "handle": "@jevgeny:matrix.org"
+    },
+    {
+      "name": "Blockchain Innovation Group",
+      "room": "#ic-node-provider-c3i3u:matrix.org",
+      "handle": "@blockchaininnovation:matrix.org"
+    },
+    {
+      "name": "LTIN AG",
+      "room": "#ic-node-provider-qpwbv:matrix.org",
+      "handle": "@sachauhlmann:matrix.org"
+    },
+    {
+      "name": "achermann.swiss",
+      "room": "#ic-node-provider-gjsts:matrix.org",
+      "handle": "@achermann.swiss:matrix.org"
+    },
+    {
+      "name": "Swiss Datalink AG",
+      "room": "#ic-node-provider-hycj4:matrix.org",
+      "handle": "@bikepope:matrix.org"
+    },
+    {
+      "name": "senseLAN",
+      "room": "#ic-node-provider-f5kd2:matrix.org",
+      "handle": "@beefmagecafe:matrix.org"
+    },
+    {
+      "name": "vestra ICT AG",
+      "room": "#ic-node-provider-izdfy:matrix.org",
+      "handle": "@jonas.foser:matrix.org"
+    },
+    {
+      "name": "SolNet",
+      "room": "#ic-node-provider-mf6om:matrix.org",
+      "handle": "@lif:matrix.solnet.ch"
+    },
+    {
+      "name": "Decentralized",
+      "room": "#ic-node-provider-hokzb:matrix.org",
+      "handle": "@decentralized_fl:matrix.org"
+    }
+  ]
+}

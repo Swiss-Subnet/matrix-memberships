@@ -16,22 +16,22 @@
       "np_room": "#ic-node-provider-mrfhx:matrix.org",
       "np_handle": "@smorier:matrix.org",
       "in_own_room": true,
-      "in_general": false,
+      "in_general": true,
       "in_announcements": true,
       "in_incident": true,
       "in_swiss_subnet": true,
-      "fully_compliant": false
+      "fully_compliant": true
     },
     {
       "np_name": "NOKU SA",
       "np_room": "#ic-node-provider-64kb5:matrix.org",
-      "np_handle": "@???",
+      "np_handle": "@perlets:matrix.org",
       "in_own_room": true,
-      "in_general": null,
-      "in_announcements": null,
-      "in_incident": null,
-      "in_swiss_subnet": null,
-      "fully_compliant": null
+      "in_general": false,
+      "in_announcements": true,
+      "in_incident": false,
+      "in_swiss_subnet": false,
+      "fully_compliant": false
     },
     {
       "np_name": "Avalution AG",
@@ -71,22 +71,22 @@
       "np_room": "#ic-node-provider-qpwbv:matrix.org",
       "np_handle": "@sachauhlmann:matrix.org",
       "in_own_room": true,
+      "in_general": true,
+      "in_announcements": true,
+      "in_incident": true,
+      "in_swiss_subnet": true,
+      "fully_compliant": true
+    },
+    {
+      "np_name": "achermann.swiss",
+      "np_room": "#ic-node-provider-gjsts:matrix.org",
+      "np_handle": "@achermann.swiss:matrix.org",
+      "in_own_room": true,
       "in_general": false,
       "in_announcements": true,
       "in_incident": true,
       "in_swiss_subnet": true,
       "fully_compliant": false
-    },
-    {
-      "np_name": "achermann.swiss",
-      "np_room": "#ic-node-provider-gjsts:matrix.org",
-      "np_handle": "@???",
-      "in_own_room": true,
-      "in_general": null,
-      "in_announcements": null,
-      "in_incident": null,
-      "in_swiss_subnet": null,
-      "fully_compliant": null
     },
     {
       "np_name": "Swiss Datalink AG",
@@ -104,11 +104,11 @@
       "np_room": "#ic-node-provider-f5kd2:matrix.org",
       "np_handle": "@beefmagecafe:matrix.org",
       "in_own_room": true,
-      "in_general": false,
+      "in_general": true,
       "in_announcements": true,
       "in_incident": true,
       "in_swiss_subnet": true,
-      "fully_compliant": false
+      "fully_compliant": true
     },
     {
       "np_name": "vestra ICT AG",
@@ -136,18 +136,18 @@
       "np_name": "Decentralized",
       "np_room": "#ic-node-provider-hokzb:matrix.org",
       "np_handle": "@decentralized_fl:matrix.org",
-      "in_own_room": false,
+      "in_own_room": true,
       "in_general": true,
       "in_announcements": true,
       "in_incident": true,
-      "in_swiss_subnet": false,
-      "fully_compliant": false
+      "in_swiss_subnet": true,
+      "fully_compliant": true
     }
   ],
   "summary": {
     "total": 13,
-    "compliant": 3,
-    "unknown": 2,
-    "with_gaps": 8
+    "compliant": 7,
+    "unknown": 0,
+    "with_gaps": 6
   }
 }
